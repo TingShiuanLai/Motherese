@@ -1,0 +1,92 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [
+  "setuptools>=61",
+]
+
+[project]
+name = "wavelet_prosody_toolkit"
+version = "1.0"
+authors = [
+  {name="Antti Suni", email="antti.suni@helsinki.fi"},
+  {name="Sébastien Le Maguer", email="sebastien.lemaguer@helsinki.fi"}
+]
+description = "Prosody wavelet analysis toolkit"
+readme = {file="README.rst", content-type="text/x-rst"}
+classifiers = [
+  'Development Status :: 4 - Beta',
+  # Audience
+  'Intended Audience :: Science/Research',
+  # Topics
+  'Topic :: Multimedia :: Sound/Audio :: Speech',
+  'Topic :: Scientific/Engineering :: Information Analysis',
+  'Topic :: Scientific/Engineering :: Visualization',
+  # Pick your license as you wish
+  'License :: OSI Approved :: MIT License',
+  # Python version (FIXME: fix the list of python version based on travis results)
+  'Programming Language :: Python :: 3',
+  'Programming Language :: Python :: 3.7',
+  'Programming Language :: Python :: 3.8',
+  'Programming Language :: Python :: 3.9',
+  'Programming Language :: Python :: 3.10',
+  'Programming Language :: Python :: 3.11',
+]
+dependencies = [
+  "pyyaml",
+  "pycwt",
+  "numpy",
+  "scipy",
+  "soundfile",
+  "tgt",
+  "wavio",
+  "joblib"
+]
+
+[project.optional-dependencies]
+gui = ["pyqt5", "matplotlib"]
+reaper = ["pyreaper"]
+docs = ["sphinx", "sphinx_rtd_theme", "numpydoc"]
+full = [
+  "pyqt5",
+  "matplotlib",
+  "pyreaper",
+  "sphinx",
+  "sphinx_rtd_theme",
+  "numpydoc"
+]
+dev = ["pre-commit"]
+
+
+[project.scripts]
+prosody_labeller = "wavelet_prosody_toolkit.prosody_labeller:main"
+cwt_analysis_synthesis = "wavelet_prosody_toolkit.cwt_analysis_synthesis:main"
+wavelet_gui = "wavelet_prosody_toolkit.wavelet_gui:main"
+
+[project.urls]
+Homepage = "https://github.com/asuni/wavelet_prosody_toolkit"
+Issues = "https://github.com/asuni/wavelet_prosody_toolkit/issues"
+git = "https://github.com/asuni/wavelet_prosody_toolkit.git"
+
+[tool.setuptools]
+packages = ["wavelet_prosody_toolkit"]
+
+[tool.black]
+line-length = 120
+target-version = ['py311']
+include = '\.pyi?$'
+exclude = '''
+/(
+  \.toml
+  |\.sh
+  |\.git
+  |\.ini
+  |Dockerfile
+  |Jenkinfile
+)/
+'''
+
+[tool.flake8]
+max-line-length = 120
+
+[tool.basedpyright]
+typeCheckingMode = "standard"
