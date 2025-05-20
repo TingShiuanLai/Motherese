@@ -65,7 +65,7 @@ class ProsodyFeatureExtractor:
         extract_f0: bool = False,
         f0_mode: str = "dct",
         f0_n_coeffs: int = 4,
-        f0_stress_localizer: str = "celex",
+        f0_stress_localizer: str = "full_curve", # "celex",
         f0_window: int = 500,  # ms
         f0_resampling_length: int = 100,
         celex_path: str = None,
@@ -123,7 +123,14 @@ class ProsodyFeatureExtractor:
         self.f0_resampling_length = f0_resampling_length
         if self.extract_f0:
             self.celex_path = celex_path
-            self.celex_manager = CelexReader(celex_path)
+            if f0_stress_localizer == "celex":
+                if celex_path is None:
+                    raise ValueError("celex_path must be provided if f0_stress_localizer is 'celex'")
+                self.celex_manager = CelexReader(celex_path)
+
+        # if self.extract_f0:
+        #     self.celex_path = celex_path
+        #     self.celex_manager = CelexReader(celex_path)
         self.extract_energy = extract_energy
         self.energy_mode = energy_mode
         self.extract_word_duration = extract_word_duration
@@ -313,6 +320,10 @@ class ProsodyFeatureExtractor:
                     signal.resample(f0[new_start:new_end], self.f0_resampling_length)
                 )
 
+            elif self.f0_stress_localizer == "full_curve":
+                # Use full word duration for F0 segment
+                segment = f0[start_idx:end_idx]
+                f0_per_word.append(signal.resample(segment, self.f0_resampling_length))
             else:
                 raise NotImplementedError(
                     f"Unknown f0_stress_localizer: {self.f0_stress_localizer}"
@@ -380,6 +391,17 @@ class ProsodyFeatureExtractor:
         if self.extract_word_duration:
             word_duration = self._extract_word_duration(lab_lines)
             features["word_duration"] = word_duration
+
+        # Ensure all features are resampled to the same length
+        target_length = min_length_of_lists([f0, energy, duration])
+        if f0 is not None and len(f0) != target_length:
+            f0 = signal.resample(f0, target_length)
+        if energy is not None and len(energy) != target_length:
+            energy = signal.resample(energy, target_length)
+        if duration is not None and len(duration) != target_length:
+            duration = signal.resample(duration, target_length)
+        if prominence is not None and len(prominence) != target_length:
+            prominence = signal.resample(prominence, target_length)
 
         assert equal_length_or_none([f0, energy, duration, prominence])
 
@@ -591,12 +613,14 @@ class ProsodyFeatureExtractor:
                     )
                     # print("utterance wav path ", ut_path_wav)
                     ut_path_txt = os.path.join(
-                        self.wav_root, reader, book, ut.replace(".lab", ".original.txt")
+                        self.wav_root, reader, book, ut.replace(".lab", ".txt") # ".original.txt"
                     )
                     if verbose:
                         print(f"Processing file {ut_path_lab}")
 
-                    text = str(open(ut_path_txt).read())
+                    # text = str(open(ut_path_txt).read())
+                    with open(ut_path_txt, "r", encoding="utf-8") as f:
+                        text = f.read()
                     if verbose:
                         print(f"Text: {text}")
 
@@ -605,10 +629,12 @@ class ProsodyFeatureExtractor:
                     #     f"replace {type(ut_path_lab.replace(self.lab_root, '').lstrip('/'))}"
                     # )
                     # create ut_path_phoneme_lab by removing self.lab_root from the front and adding self.phoneme_lab_root
-                    ut_path_phoneme_lab = os.path.join(
-                        str(self.phoneme_lab_root),
-                        str(ut_path_lab.replace(self.lab_root, "").lstrip("/")),
-                    )
+                    relative_lab_path = os.path.relpath(ut_path_lab, self.lab_root)
+                    ut_path_phoneme_lab = os.path.join(self.phoneme_lab_root, relative_lab_path)
+                    # ut_path_phoneme_lab = os.path.join(
+                    #     str(self.phoneme_lab_root),
+                    #     str(ut_path_lab.replace(self.lab_root, "").lstrip("/")),
+                    # )
 
                     features, nb_syll_not_found = self._extract_features(
                         lab_path=ut_path_lab,
