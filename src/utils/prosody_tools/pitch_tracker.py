@@ -84,7 +84,8 @@ def _track_pitch(
 
     # second pass with soft constraints
     n_iters = 3
-    from scipy.signal import gaussian
+    from scipy.signal.windows import gaussian
+    # from scipy.signal import gaussian
 
     for iter in range(0, n_iters):
         if verbose:

@@ -498,7 +498,7 @@ def read_lab_file(lab_path):
     Returns a list of lists, where each list lines[i] contains the start time (lines[i][0]), end time (lines[i][1]), and word/phoneme (lines[i][2]).
     Note that if there a pause, len(lines[i]) < 3, since there is no word/phoneme
     """
-    with open(lab_path, "r") as f:
+    with open(lab_path, "r", encoding="utf-8") as f: #open(lab_path, "r") 
         lines = f.readlines()
         lines = [line.strip().split("\t") for line in lines]
     # Cast start and end to float
