@@ -13,6 +13,7 @@ from g2p_en import G2p
 
 dic = pyphen.Pyphen(lang="en")
 g2p = G2p()
+missing_words_logged = set()
 
 try:
     d = cmudict.dict()
@@ -208,30 +209,24 @@ def extract_syllables_from_phonemes(phonemes):
 class CelexReader:
     def __init__(self, file_path):
         self.data = self._load_data(file_path)
-
+        
     def _load_data(self, file_path):
-        # Dictionary to store the information
         data = {}
 
-        # Open the file and read line by line
-        with open(file_path, "r") as file:
-            # Skipping header line (assuming the first line is the header)
-            # If there's no header, comment the line below
-            # next(file)
-
-            # Reading each line
+        with open(file_path, "r", encoding="utf-8") as file:
             for line in file:
-                # Splitting the line by tabs
-                (
-                    head,
-                    cls,
-                    strs_pat,
-                    phon_syl_disc,
-                    morph_status,
-                    cob,
-                ) = line.strip().split("\\")
+                fields = line.strip().split("\t")  # assuming tab-separated
 
-                # Creating a dictionary for the current word
+                if len(fields) < 9:
+                    continue  # skip malformed lines
+
+                head = fields[1]                # Word
+                cls = fields[5]                 # PronStatus (best guess as "Class")
+                strs_pat = fields[6]            # PhonStrsDISC (stress pattern)
+                phon_syl_disc = fields[8]       # PhonSylBCLX (syllabified)
+                morph_status = fields[4]        # PronCnt or IdNumLemma (your call)
+                cob = fields[2]                 # Frequency
+
                 info = {
                     "Class": cls,
                     "StressPattern": strs_pat,
@@ -240,10 +235,44 @@ class CelexReader:
                     "Frequency": cob,
                 }
 
-                # Adding to the data dictionary
-                data[head] = info
+                data[head.lower()] = info  # normalize for lookups
 
         return data
+    # def _load_data(self, file_path):
+    #     # Dictionary to store the information
+    #     data = {}
+
+    #     # Open the file and read line by line
+    #     with open(file_path, "r") as file:
+    #         # Skipping header line (assuming the first line is the header)
+    #         # If there's no header, comment the line below
+    #         # next(file)
+
+    #         # Reading each line
+    #         for line in file:
+    #             # Splitting the line by tabs
+    #             (
+    #                 head,
+    #                 cls,
+    #                 strs_pat,
+    #                 phon_syl_disc,
+    #                 morph_status,
+    #                 cob,
+    #             ) = line.strip().split("\\")
+
+    #             # Creating a dictionary for the current word
+    #             info = {
+    #                 "Class": cls,
+    #                 "StressPattern": strs_pat,
+    #                 "PhoneticSyllable": phon_syl_disc,
+    #                 "MorphStatus": morph_status,
+    #                 "Frequency": cob,
+    #             }
+
+    #             # Adding to the data dictionary
+    #             data[head] = info
+
+    #     return data
 
     def lookup(self, word):
         # Returning the information for the requested word
