@@ -12,7 +12,7 @@ from multiprocessing import Pool, cpu_count, current_process
 from copy import deepcopy
 
 from src.utils.text_processing import find_stress_syllable_start
-from src.utils.text_processing import syllabify
+from src.utils.text_processing import normalize_word, safe_syllabify # syllabify
 from src.utils.text_processing import CelexReader
 
 from src.utils.text_processing import (
@@ -281,44 +281,83 @@ class ProsodyFeatureExtractor:
             end_idx = sec_to_idx(float(end), end_time, len(f0))
             if verbose:
                 print(f"original start idx: {start_idx}, end idx: {end_idx}")
+            elif self.f0_stress_localizer == "celex":
+                cleaned_word = normalize_word(word)
+                syllables = safe_syllabify(cleaned_word)
+                stressed_syllable_idx = self.celex_manager.get_stress_index(cleaned_word)
 
-            if self.f0_stress_localizer == "celex":
-                syllables = syllabify(word)
-                stressed_syllable_idx = self.celex_manager.get_stress_index(word)
-
-                stress_syllable_time = find_stress_syllable_start(
-                    syllables=syllables,
-                    stress_index=stressed_syllable_idx,
-                    phoneme_lab_lines=phoneme_lab_lines,
-                    word_start=float(start),
-                    word_end=float(end),
-                )
-
-                if stress_syllable_time:
-                    stress_syllable_idx = sec_to_idx(
-                        stress_syllable_time, end_time, len(f0)
-                    )
+                if stressed_syllable_idx is None or stressed_syllable_idx >= len(syllables):
                     if verbose:
-                        print(
-                            f"stress syllable found for {word} at {stress_syllable_idx}"
-                        )
-                    new_start = max(
-                        start_idx, stress_syllable_idx - self.f0_window // 2
-                    )
-                    new_end = min(end_idx, stress_syllable_idx + self.f0_window // 2)
-                    if verbose:
-                        print(f"new start idx: {new_start}, end idx: {new_end}")
-                else:
-                    if verbose:
-                        print(f"no stress syllable found for {word}")
+                        print(f"⚠️ No valid stress index for '{word}' — using full word range.")
                     cnt_not_found += 1
                     new_start = start_idx
                     new_end = end_idx
+                else:
+                    stress_syllable_time = find_stress_syllable_start(
+                        syllables=syllables,
+                        stress_index=stressed_syllable_idx,
+                        phoneme_lab_lines=phoneme_lab_lines,
+                        word_start=float(start),
+                        word_end=float(end),
+                    )
 
-                # resample
+                    if stress_syllable_time:
+                        stress_syllable_idx = sec_to_idx(
+                            stress_syllable_time, end_time, len(f0)
+                        )
+                        new_start = max(start_idx, stress_syllable_idx - self.f0_window // 2)
+                        new_end = min(end_idx, stress_syllable_idx + self.f0_window // 2)
+                        if verbose:
+                            print(f"✅ Found stress in '{word}' at F0 index {stress_syllable_idx}")
+                    else:
+                        if verbose:
+                            print(f"⚠️ Stress location not found in timing for '{word}'")
+                        cnt_not_found += 1
+                        new_start = start_idx
+                        new_end = end_idx
+
                 f0_per_word.append(
                     signal.resample(f0[new_start:new_end], self.f0_resampling_length)
                 )
+
+            # if self.f0_stress_localizer == "celex":
+            #     syllables = safe_syllabify(word)
+            #     # syllables = syllabify(word)
+            #     stressed_syllable_idx = self.celex_manager.get_stress_index(word)
+
+            #     stress_syllable_time = find_stress_syllable_start(
+            #         syllables=syllables,
+            #         stress_index=stressed_syllable_idx,
+            #         phoneme_lab_lines=phoneme_lab_lines,
+            #         word_start=float(start),
+            #         word_end=float(end),
+            #     )
+
+            #     if stress_syllable_time:
+            #         stress_syllable_idx = sec_to_idx(
+            #             stress_syllable_time, end_time, len(f0)
+            #         )
+            #         if verbose:
+            #             print(
+            #                 f"stress syllable found for {word} at {stress_syllable_idx}"
+            #             )
+            #         new_start = max(
+            #             start_idx, stress_syllable_idx - self.f0_window // 2
+            #         )
+            #         new_end = min(end_idx, stress_syllable_idx + self.f0_window // 2)
+            #         if verbose:
+            #             print(f"new start idx: {new_start}, end idx: {new_end}")
+            #     else:
+            #         if verbose:
+            #             print(f"no stress syllable found for {word}")
+            #         cnt_not_found += 1
+            #         new_start = start_idx
+            #         new_end = end_idx
+
+            #     # resample
+            #     f0_per_word.append(
+            #         signal.resample(f0[new_start:new_end], self.f0_resampling_length)
+            #     )
 
             elif self.f0_stress_localizer == "full_curve":
                 # Use full word duration for F0 segment
