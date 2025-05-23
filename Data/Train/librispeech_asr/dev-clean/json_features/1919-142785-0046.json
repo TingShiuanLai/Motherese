@@ -5,10 +5,10 @@
   "features": {
     "pause_before": [
       0.0,
-      0.0
+      0.37
     ],
     "pause_after": [
-      0.0,
+      0.37,
       0.0
     ],
     "words": [

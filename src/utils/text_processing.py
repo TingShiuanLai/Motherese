@@ -118,58 +118,91 @@ def nb_syllables(word):
     except KeyError:
         return syllables.estimate(word)
 
+def normalize_word(word):
+    word = word.lower().replace("’", "'")
+    # Remove possessive 's (but preserve contractions like don't, isn't)
+    word = re.sub(r"'s$", "", word)
+    word = re.sub(r"[^\w']", "", word)
+    return word
 
-def syllabify(word):
-    """
-    Syllabifies a word using the CMU Pronouncing Dictionary.
-    If the word is not in the dictionary, use g2p_en as a fallback.
-    Returns: a list of syllables
-    """
+def safe_syllabify(word):
+    cleaned = normalize_word(word)
     try:
-        # Get the syllabified phonemes from the dictionary
-        syllabified_phonemes = d[word.lower()][0]
-
-        # Create syllables from the phonemes
-        syllables = []
-        syllable = ""
-
-        for phoneme in syllabified_phonemes:
-            # Phonemes with numbers are the end of a syllable
-            if "0" in phoneme or "1" in phoneme or "2" in phoneme:
-                syllable += phoneme
-                syllables.append(syllable)
-                syllable = ""
-            else:
-                syllable += phoneme
-
-        # Catch any remaining phonemes as a syllable
-        if syllable:
-            syllables.append(syllable)
-
-        return syllables
-
+        syllabified_phonemes = d[cleaned][0]
     except KeyError:
-        print(
-            f"Word '{word}' not in CMU Pronouncing Dictionary. Using g2p for ARPABET conversion."
-        )
-        # Use g2p_en as a fallback
-        arpabet_phonemes = g2p(word)
-        syllables = []
-        syllable = ""
+        if cleaned not in missing_words_logged:
+            print(f"'{word}' not in cmudict. Using g2p fallback.")
+            missing_words_logged.add(cleaned)
+        try:
+            syllabified_phonemes = g2p(cleaned)
+        except Exception:
+            return ["UNK"]
+    return extract_syllables_from_phonemes(syllabified_phonemes)
 
-        for phoneme in arpabet_phonemes:
-            if "0" in phoneme or "1" in phoneme or "2" in phoneme:
-                syllable += phoneme
-                syllables.append(syllable)
-                syllable = ""
-            else:
-                syllable += phoneme
-
-        # Catch any remaining phonemes as a syllable
-        if syllable:
+def extract_syllables_from_phonemes(phonemes):
+    syllables = []
+    syllable = ""
+    for phoneme in phonemes:
+        if any(d in phoneme for d in "012"):
+            syllable += phoneme
             syllables.append(syllable)
+            syllable = ""
+        else:
+            syllable += phoneme
+    if syllable:
+        syllables.append(syllable)
+    return syllables
+# def syllabify(word):
+#     """
+#     Syllabifies a word using the CMU Pronouncing Dictionary.
+#     If the word is not in the dictionary, use g2p_en as a fallback.
+#     Returns: a list of syllables
+#     """
+#     try:
+#         # Get the syllabified phonemes from the dictionary
+#         syllabified_phonemes = d[word.lower()][0]
 
-        return syllables
+#         # Create syllables from the phonemes
+#         syllables = []
+#         syllable = ""
+
+#         for phoneme in syllabified_phonemes:
+#             # Phonemes with numbers are the end of a syllable
+#             if "0" in phoneme or "1" in phoneme or "2" in phoneme:
+#                 syllable += phoneme
+#                 syllables.append(syllable)
+#                 syllable = ""
+#             else:
+#                 syllable += phoneme
+
+#         # Catch any remaining phonemes as a syllable
+#         if syllable:
+#             syllables.append(syllable)
+
+#         return syllables
+
+#     except KeyError:
+#         print(
+#             f"Word '{word}' not in CMU Pronouncing Dictionary. Using g2p for ARPABET conversion."
+#         )
+#         # Use g2p_en as a fallback
+#         arpabet_phonemes = g2p(word)
+#         syllables = []
+#         syllable = ""
+
+#         for phoneme in arpabet_phonemes:
+#             if "0" in phoneme or "1" in phoneme or "2" in phoneme:
+#                 syllable += phoneme
+#                 syllables.append(syllable)
+#                 syllable = ""
+#             else:
+#                 syllable += phoneme
+
+#         # Catch any remaining phonemes as a syllable
+#         if syllable:
+#             syllables.append(syllable)
+
+#         return syllables
 
 
 class CelexReader:
