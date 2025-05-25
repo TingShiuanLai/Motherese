@@ -51,5 +51,5 @@ def add_transcripts(base_dir):
 
 # Example usage
 if __name__ == "__main__":
-    base_dir = "Data/Train/librispeech_asr/dev-clean"  # change this if needed
+    base_dir = "Data/Train/librispeech_asr/train-clean-100"  # change this if needed
     add_transcripts(base_dir)
