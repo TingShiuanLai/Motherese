@@ -58,8 +58,8 @@ for epoch in range(EPOCHS):
     print(f"Epoch {epoch + 1}/{EPOCHS}, Loss: {total_loss:.4f}")
 
 # Save model
-torch.save(model.state_dict(), os.path.join(SAVE_DIR, "pytorch_model.bin"))
 model.save_pretrained(SAVE_DIR)
+torch.save(model.state_dict(), os.path.join(SAVE_DIR, "pytorch_model.bin"))
 processor.save_pretrained(SAVE_DIR)
 print(f"Model saved to {SAVE_DIR}")
 
