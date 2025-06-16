@@ -1,0 +1,9 @@
+data_dir: "C:/Users/10935/Desktop/Master/Spring 2025/DSC 291 Cognitive mod/final_project/Motherese/data/train/childes/Brent_resample/json_features"
+save_dir: "C:/Users/10935/Desktop/Master/Spring 2025/DSC 291 Cognitive mod/final_project/Motherese/whisper_positional_embedding/trained_model-Brent_resample"
+batch_size: 16
+learning_rate: 1e-4
+# learning_rate: 3e-5
+epochs: 10
+prosody_dim: 13
+vocab_path: "C:/Users/10935/Desktop/Master/Spring 2025/DSC 291 Cognitive mod/final_project/Motherese/whisper_positional_embedding/whisper_tokenizer/vocab.json"
+merges_path: "C:/Users/10935/Desktop/Master/Spring 2025/DSC 291 Cognitive mod/final_project/Motherese/whisper_positional_embedding/whisper_tokenizer/merges.txt"
